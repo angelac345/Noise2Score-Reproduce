@@ -1,1 +1,6 @@
 *.pdf
+venv
+DIV2K*
+*png
+
+__pycache__*
