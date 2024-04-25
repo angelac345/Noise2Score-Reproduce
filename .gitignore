@@ -4,3 +4,6 @@ DIV2K*
 *png
 
 __pycache__*
+ckpts*
+*pth
+wandb

@@ -1,6 +1,6 @@
 
 import numpy as np 
-
+import torch
 def augment_images(img: np.ndarray) -> np.ndarray: 
     '''
         Expected Input: n x c x h x w
@@ -14,5 +14,5 @@ def augment_images(img: np.ndarray) -> np.ndarray:
 
 def psnr(img, ref): 
     
-    mse = np.mean(np.square(img - ref)) 
+    mse = torch.mean(torch.square(img - ref)) 
     return 10 * np.log10(1 / mse) 

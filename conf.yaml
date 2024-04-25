@@ -1,5 +1,5 @@
 eval_freq: 5 
-train_id: V1
+train_id: save-forward-scale1-train
 total_epochs: 100
 use_wandb: True
 

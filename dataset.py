@@ -8,7 +8,7 @@ from pathlib import Path
 from tqdm import tqdm, trange
 class ImageDataset(Dataset): 
     def __init__(self, path, sigma): 
-        self.sigma = sigma 
+        self.sigma = sigma /255
         super(ImageDataset, self).__init__() 
         self.c_imgs = []
 
@@ -31,6 +31,9 @@ class ImageDataset(Dataset):
         self._augment_images()
         self.c_imgs=torch.from_numpy(np.moveaxis(self.c_imgs,3,1))
         self.n_imgs=torch.from_numpy(np.moveaxis(self.n_imgs,3,1))
+
+        self.c_imgs = self.c_imgs / 255.
+        self.n_imgs = self.n_imgs / 255.
         '''
         Creates a dictionary
         '''
