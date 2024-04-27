@@ -12,7 +12,6 @@ def augment_images(img: np.ndarray) -> np.ndarray:
     img[V_flip] = img[V_flip, ::-1, :,::-1]
     return img 
 
-def psnr(img, ref): 
-    
+def psnr(img, ref, peak): 
     mse = torch.mean(torch.square(img - ref)) 
-    return 10 * np.log10(1 / mse) 
+    return 10 * torch.log10((peak**2) / mse) 

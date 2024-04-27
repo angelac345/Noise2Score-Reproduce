@@ -1,5 +1,5 @@
-eval_freq: 5 
-train_id: save-forward-scale1-train
+eval_freq: 1 
+train_id: save-forward-ConvTranspose-train
 total_epochs: 100
 use_wandb: True
 
@@ -12,3 +12,4 @@ noise_sig: 25
 
 train_data_path: '/home/ac2323/4782/Noise2Score-Reproduce/DIV2K_train_HR' 
 eval_data_path: '/home/ac2323/4782/Noise2Score-Reproduce/DIV2K_valid_HR'
+peak: 255

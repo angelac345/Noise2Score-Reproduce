@@ -38,7 +38,7 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
 
     for i in trange(n_ckpts, conf.total_epochs, desc='Training Loop'): 
 
-        q = i / len(train_dataset) 
+        q = (i+1) / len(train_dataset) 
         sig = sig_max * (1 - q) + sig_min * q
 
         
@@ -83,7 +83,7 @@ def eval(eval_dataset, model, conf):
         
         orig = orig * 255.
         recon = torch.clamp(recon * 255., min=0, max=255.) 
-        total_psnr += psnr(orig, recon)
+        total_psnr += psnr(orig, recon, peak=conf.peak)
 
     return total_psnr / len(eval_dataset)
         
