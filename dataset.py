@@ -7,28 +7,40 @@ from pathlib import Path
 
 from tqdm import tqdm, trange
 class ImageDataset(Dataset): 
-    def __init__(self, path, sigma): 
-        self.sigma = sigma /255
+    def __init__(self, orig_img_path, sigma,patchnum=1,noised_img_path=None): 
+        self.sigma = sigma / 255
         super(ImageDataset, self).__init__() 
         self.c_imgs = []
+        self.n_imgs = [] 
 
-        self.data_path = Path(path)
-        imDirec = os.listdir(path)
-        for i in tqdm(imDirec, desc='Patching Images'):
-            oImg = cv2.imread(str(Path(path, i)), 1)
-            s = oImg.shape
-            patch_x = np.random.randint(s[0]-128)
-            patch_y = np.random.randint(s[1]-128) 
-            patch=oImg[patch_x:(patch_x+128), patch_y:(patch_y+128)]
-            self.c_imgs.append(patch)
-            '''
-            Add a 128x128 patch of each image to our data set 
-            '''
+        self.data_path = Path(orig_img_path)
+        imDirec = os.listdir(orig_img_path)
+        for p in range(patchnum):
+            for i in tqdm(imDirec, desc='Patching Images'):
+                oImg = cv2.imread(str(Path(orig_img_path, i)), 1)
+                s = oImg.shape
+                patch_x = np.random.randint(s[0]-128)
+                patch_y = np.random.randint(s[1]-128) 
+                patch=oImg[patch_x:(patch_x+128), patch_y:(patch_y+128)]
+                self.c_imgs.append(patch)
+
+                if noised_img_path is not None: 
+                    noised_img = cv2.imread(str(Path(orig_img_path, i)), 1)
+                    noised_patch = noised_img[patch_x:(patch_x+128), patch_y:(patch_y+128)] 
+                    self.n_imgs.append(noised_patch)
+
+                '''
+                Add a 128x128 patch of each image to our data set 
+                '''
         self.c_imgs =np.array(self.c_imgs)
-        self.n_imgs=np.copy(self.c_imgs)
-        ''
-        self._addNoise()
-        self._augment_images()
+        
+        if noised_img_path is None: 
+            self.n_imgs=np.copy(self.c_imgs)
+            self._addNoise()
+            self._augment_images()
+        else: 
+            self.n_imgs = np.array(self.n_imgs) 
+
         self.c_imgs=torch.from_numpy(np.moveaxis(self.c_imgs,3,1))
         self.n_imgs=torch.from_numpy(np.moveaxis(self.n_imgs,3,1))
 

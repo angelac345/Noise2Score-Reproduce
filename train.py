@@ -35,7 +35,7 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
     
     sig_max, sig_min = conf.sig_max, conf.sig_min 
 
-
+    print(f'starting training at: {n_ckpts} epoch')
     for i in trange(n_ckpts, conf.total_epochs, desc='Training Loop'): 
 
         q = (i+1) / len(train_dataset) 
@@ -81,8 +81,8 @@ def eval(eval_dataset, model, conf):
             out = model(noised.float().unsqueeze(0)) 
             recon = out.squeeze(0) * (conf.noise_sig**2) + noised 
         
-        orig = orig * 255.
-        recon = torch.clamp(recon * 255., min=0, max=255.) 
+        orig = orig * conf.peak
+        recon = torch.clamp(recon * conf.peak, min=0, max=conf.peak) 
         total_psnr += psnr(orig, recon, peak=conf.peak)
 
     return total_psnr / len(eval_dataset)
@@ -90,8 +90,8 @@ def eval(eval_dataset, model, conf):
 def main(): 
     
     conf = OmegaConf.load('conf.yaml')
-    train_dataset = ImageDataset(path=conf.train_data_path, sigma=conf.noise_sig) 
-    val_dataset = ImageDataset(path=conf.eval_data_path, sigma=conf.noise_sig) 
+    train_dataset = ImageDataset(orig_img_path=conf.train_data_path, sigma=conf.noise_sig, patchnum=conf.patch_num) 
+    val_dataset = ImageDataset(orig_img_path=conf.eval_data_path, sigma=conf.noise_sig, patchnum=conf.patch_num) 
     model = Model(in_channel=3, out_channel=3) 
     optimizer = Adam(model.parameters(), lr=conf.lr) 
     scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
