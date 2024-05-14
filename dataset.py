@@ -5,10 +5,11 @@ import cv2
 import os 
 from pathlib import Path
 
+
 from tqdm import tqdm, trange
 class ImageDataset(Dataset): 
     def __init__(self, orig_img_path, sigma,patchnum=1,noised_img_path=None): 
-        self.sigma = sigma / 255
+        self.sigma = sigma 
         super(ImageDataset, self).__init__() 
         self.c_imgs = []
         self.n_imgs = [] 
@@ -16,8 +17,9 @@ class ImageDataset(Dataset):
         self.data_path = Path(orig_img_path)
         imDirec = os.listdir(orig_img_path)
         for p in range(patchnum):
-            for i in tqdm(imDirec, desc='Patching Images'):
+            for i in tqdm(imDirec, desc='Patching Images', ncols=0, dynamic_ncols=False):
                 oImg = cv2.imread(str(Path(orig_img_path, i)), 1)
+
                 s = oImg.shape
                 patch_x = np.random.randint(s[0]-128)
                 patch_y = np.random.randint(s[1]-128) 
@@ -25,7 +27,7 @@ class ImageDataset(Dataset):
                 self.c_imgs.append(patch)
 
                 if noised_img_path is not None: 
-                    noised_img = cv2.imread(str(Path(orig_img_path, i)), 1)
+                    noised_img = cv2.imread(str(Path(noised_img_path, i)), 1)
                     noised_patch = noised_img[patch_x:(patch_x+128), patch_y:(patch_y+128)] 
                     self.n_imgs.append(noised_patch)
 
@@ -36,8 +38,8 @@ class ImageDataset(Dataset):
         
         if noised_img_path is None: 
             self.n_imgs=np.copy(self.c_imgs)
-            self._addNoise()
             self._augment_images()
+            self._addNoise()
         else: 
             self.n_imgs = np.array(self.n_imgs) 
 
@@ -83,8 +85,8 @@ class ImageDataset(Dataset):
         '''
         Implement Gaussian Noise based on Sigma Value 
         '''
-        noise = np.random.normal(0,self.sigma,np.shape(self.c_imgs))
-        self.n_imgs=np.add(self.c_imgs,noise)
+        noise = np.random.normal(0, self.sigma, np.shape(self.c_imgs))
+        self.n_imgs = np.clip(np.add(self.c_imgs, noise), a_min=0, a_max=255)
 
     def __getitem__(self, idx):
         '''

@@ -9,3 +9,6 @@ ckpts*
 wandb
 
 CBSD68-dataset*
+
+datasets
+scripts

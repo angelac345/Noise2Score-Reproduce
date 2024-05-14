@@ -6,6 +6,11 @@ from tqdm import tqdm, trange
 import torch 
 import torch.nn as nn
 from torch.optim import Adam, lr_scheduler
+from torch.utils.data.dataloader import DataLoader
+import sys
+
+import numpy as np 
+import cv2 
 
 from pathlib import Path 
 from argparse import ArgumentParser
@@ -29,25 +34,34 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
 
     # setting up ckpt saving path
     save_path = Path('ckpts', conf.train_id)
-
     save_path.mkdir(parents=True, exist_ok=True)
-    n_ckpts = len(os.listdir(save_path))
-    
+
+    conf_save = Path(save_path, 'conf.yaml') 
+    if not conf_save.exists(): 
+        OmegaConf.save(conf, Path(save_path, 'conf.yaml'))
+
+    existing_ckpts = [p for p in os.listdir(save_path) if 'conf' not in p]
+    n_ckpts = len(existing_ckpts)
+
+    if n_ckpts > 0: 
+        keys = torch.load(str(Path(save_path, existing_ckpts[-1]))) 
+        model.load_state_dict(keys)
+
     sig_max, sig_min = conf.sig_max, conf.sig_min 
 
-    print(f'starting training at: {n_ckpts} epoch')
-    for i in trange(n_ckpts, conf.total_epochs, desc='Training Loop'): 
+    print(f'starting training at: {n_ckpts} epoch') 
+    for i in trange(n_ckpts, conf.total_epochs, desc='Training Loop', ncols=0, dynamic_ncols=False): 
 
-        q = (i+1) / len(train_dataset) 
+        q = (i+1) / len(train_dataset)
         sig = sig_max * (1 - q) + sig_min * q
 
         
         loss_total = 0
-        for data in tqdm(train_dataset, desc=f'epoch:{i}', position=-1): 
+        for data in tqdm(train_dataset, desc=f'epoch:{i}', position=-1, ncols=0, dynamic_ncols=False): 
 
             optimizer.zero_grad()
 
-            noised_img = data['noised_img'].float().unsqueeze(0)
+            noised_img = data['noised_img'].float()
             loss, u = forward(noised_img, model, sig=sig) 
             loss_total += loss 
 
@@ -67,36 +81,72 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
 
         if conf.use_wandb: 
             wandb.log(log_dict)
-        
 
 
 def eval(eval_dataset, model, conf): 
     
-    total_psnr = 0
-    for data in tqdm(eval_dataset, desc='eval loop'): 
+    orig_noised_psnr = 0
+    orig_recon_psnr = 0
+    recon_noised_psnr = 0
+    for i, data in tqdm(enumerate(eval_dataset), desc='eval loop'): 
 
         noised, orig = data['noised_img'], data['orig_img'] 
 
+
         with torch.no_grad(): 
-            out = model(noised.float().unsqueeze(0)) 
-            recon = out.squeeze(0) * (conf.noise_sig**2) + noised 
+            out = model(noised.float()) 
+            recon = out.squeeze(0) * ((conf.noise_sig/255)**2) + noised 
         
         orig = orig * conf.peak
         recon = torch.clamp(recon * conf.peak, min=0, max=conf.peak) 
-        total_psnr += psnr(orig, recon, peak=conf.peak)
+        noised = noised * conf.peak
 
-    return total_psnr / len(eval_dataset)
+        if conf.image_output: 
+            visualize  = torch.cat([orig, recon, noised], dim=-1).squeeze(0).numpy()
+            visualize = np.moveaxis(visualize, 0, 2)
+            cv2.imwrite(f'/home/ac2323/4782/Noise2Score-Reproduce/img_output/img{i}.png', visualize)
+
+        orig_recon_psnr += psnr(recon, orig, peak=conf.peak)
+        orig_noised_psnr += psnr(orig, noised, peak=conf.peak)
+        recon_noised_psnr += psnr(recon, noised, peak=conf.peak)
+
+    print(f'{orig_noised_psnr/ len(eval_dataset)=}, {orig_recon_psnr/ len(eval_dataset)=}, {recon_noised_psnr/ len(eval_dataset)=}')
+    return orig_recon_psnr / len(eval_dataset)
         
 def main(): 
+    conf_path = Path('/home/ac2323/4782/Noise2Score-Reproduce/conf', sys.argv[1])
+    conf = OmegaConf.load(conf_path)
+
+    train_dataset = ImageDataset(
+        orig_img_path=conf.train_data_path, 
+        sigma=conf.noise_sig, 
+        patchnum=conf.patch_num
+    ) 
+    val_dataset = ImageDataset(
+        orig_img_path=conf.eval_orig_data_path, 
+        sigma=conf.noise_sig, 
+        patchnum=conf.patch_num, 
+        noised_img_path=conf.eval_noised_data_path
+    ) 
+
+    train_dataloader = DataLoader(
+        train_dataset, 
+        batch_size=conf.train_batch_size, 
+        shuffle=conf.shuffle
+    )
+
+    val_dataloader = DataLoader(
+        val_dataset, 
+        batch_size=conf.val_batch_size, 
+        shuffle=conf.shuffle
+    )
     
-    conf = OmegaConf.load('conf.yaml')
-    train_dataset = ImageDataset(orig_img_path=conf.train_data_path, sigma=conf.noise_sig, patchnum=conf.patch_num) 
-    val_dataset = ImageDataset(orig_img_path=conf.eval_data_path, sigma=conf.noise_sig, patchnum=conf.patch_num) 
     model = Model(in_channel=3, out_channel=3) 
     optimizer = Adam(model.parameters(), lr=conf.lr) 
     scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
     
-    train(conf, train_dataset, val_dataset, model, optimizer, scheduler)
+    print(f'{conf.train_id=}')
+    train(conf, train_dataloader, val_dataloader, model, optimizer, scheduler)
 
 
 if __name__ == '__main__': 

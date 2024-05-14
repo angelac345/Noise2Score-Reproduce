@@ -7,4 +7,5 @@ noise_sig: 25
 noised_datapath: '/home/ac2323/4782/Noise2Score-Reproduce/CBSD68-dataset/CBSD68/noisy25' 
 orig_datapath: '/home/ac2323/4782/Noise2Score-Reproduce/CBSD68-dataset/CBSD68/original_png'
 
+image_output: True
 peak: 255

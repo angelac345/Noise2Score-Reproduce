@@ -1,0 +1,21 @@
+eval_freq: 1 
+train_id: single-patch-shuffle-sig-fix
+total_epochs: 100
+use_wandb: True
+
+lr: 0.0002
+
+sig_max: 0.1 
+sig_min: 0.001 
+noise_sig: 25 
+
+train_data_path: '/home/ac2323/4782/Noise2Score-Reproduce/DIV2K_train_HR' 
+eval_noised_data_path: '/home/ac2323/4782/Noise2Score-Reproduce/CBSD68-dataset/CBSD68/noisy25'
+eval_orig_data_path: '/home/ac2323/4782/Noise2Score-Reproduce/CBSD68-dataset/CBSD68/original_png'
+peak: 255
+patch_num: 1
+
+train_batch_size: 1 
+val_batch_size: 1 
+shuffle: True
+image_output: False

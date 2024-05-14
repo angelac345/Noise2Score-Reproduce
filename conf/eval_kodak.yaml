@@ -1,0 +1,11 @@
+lr: 0.0002
+
+sig_max: 0.1 
+sig_min: 0.001 
+noise_sig: 25 
+
+orig_datapath: '/home/ac2323/4782/Noise2Score-Reproduce/datasets/kodak'
+noised_datapath: Null
+
+image_output: True
+peak: 255
