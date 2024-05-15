@@ -30,10 +30,13 @@ method within a reasonable scope. The result then shows the practicality of usin
 ## Re-Implementation Details
 
 ### Algorithm: 
+
 <img src='assets/algorithm.png'>
+
 We replicated the pseudo code provded by the original Noise2Score paper. 
 
 ### Model Implementation 
+
 <img src='assets/model.png'> 
 
 Since this paper did not provide specific details or modifications they made, we adopted the model architecture provided in the Noise2Noise paper, which is referenced from the original Noise2Score paper. 
@@ -117,6 +120,7 @@ This repository trains for about 8-10 hours on a  NVidia GeForce GTX 1080-Ti GPU
 ## Results and Analysis 
 
 Below is a qualitative visualization of the denoising effect from our reimplementation model of Noise2Score. The left is the clean image, the middle is our denoised output, and the right is the fully noised image. It can be seen that there was a denoising effect from the model.
+
 <img src='assets/img11.png'>
 
 However, when we compare this to the below image that describes the original paper's denoising output example for $\sigma=50$(there was no visualization for $\sigma=25$), we see that their denoising effect is much more clear. 
