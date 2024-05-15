@@ -22,8 +22,19 @@ from util import psnr
 
 import time
 
-def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler): 
+def train(conf, train_dataloader, eval_dataloader, model, optimizer, scheduler): 
 
+    '''
+        Parameters: 
+        - conf: name of the config file that contains settings for this round of training 
+        - train_dataloader: the dataloader that contains training data
+        - eval_dataloader: the dataloader that contains validation data 
+        - model: the model to train with this training loop 
+        - optimizer: the optimizer used for training 
+        - scheduler: learning rate scheduler used for training 
+    
+        
+    '''
     if conf.use_wandb: 
         wandb.init(
             project="Noise2ScoreReproduce",
@@ -40,6 +51,8 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
     if not conf_save.exists(): 
         OmegaConf.save(conf, Path(save_path, 'conf.yaml'))
 
+    # check for existing checkpoints in the same training run, if there exists, 
+    # load the last checkpoint and train from there 
     existing_ckpts = [p for p in os.listdir(save_path) if 'conf' not in p]
     n_ckpts = len(existing_ckpts)
 
@@ -47,17 +60,18 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
         keys = torch.load(str(Path(save_path, existing_ckpts[-1]))) 
         model.load_state_dict(keys)
 
+    # sigma annealing 
     sig_max, sig_min = conf.sig_max, conf.sig_min 
 
     print(f'starting training at: {n_ckpts} epoch') 
     for i in trange(n_ckpts, conf.total_epochs, desc='Training Loop', ncols=0, dynamic_ncols=False): 
 
-        q = (i+1) / len(train_dataset)
+        q = (i+1) / len(train_dataloader)
         sig = sig_max * (1 - q) + sig_min * q
 
         
         loss_total = 0
-        for data in tqdm(train_dataset, desc=f'epoch:{i}', position=-1, ncols=0, dynamic_ncols=False): 
+        for data in tqdm(train_dataloader, desc=f'epoch:{i}', position=-1, ncols=0, dynamic_ncols=False): 
 
             optimizer.zero_grad()
 
@@ -70,10 +84,11 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
 
         scheduler.step() 
 
-        log_dict = {'train_mean_loss': loss_total / len(train_dataset)}
+        log_dict = {'train_mean_loss': loss_total / len(train_dataloader)}
 
+        # evaluating the current model based on the evaluation 
         if i != 0 and i % conf.eval_freq == 0: 
-            psnr_val = eval(eval_dataset, model, conf)
+            psnr_val = eval(eval_dataloader, model, conf)
             log_dict['eval_psnr'] = psnr_val
 
             torch.save(model.state_dict(), Path(save_path, f'{conf.train_id}-epoch={i}-loss={loss_total}-psnr={psnr_val}.pth'))
@@ -83,12 +98,19 @@ def train(conf, train_dataset, eval_dataset, model, optimizer, scheduler):
             wandb.log(log_dict)
 
 
-def eval(eval_dataset, model, conf): 
-    
+def eval(eval_dataloader, model, conf): 
+    '''
+        Evaluates the model provided using `conf` config on `eval_dataloader` 
+
+        - eval_dataloader: the dataloader containing validation data or evaluation data
+        - model: the model to evaluate
+        - conf: configurations containing the settings used for evaluation 
+
+    '''
     orig_noised_psnr = 0
     orig_recon_psnr = 0
     recon_noised_psnr = 0
-    for i, data in tqdm(enumerate(eval_dataset), desc='eval loop'): 
+    for i, data in tqdm(enumerate(eval_dataloader), desc='eval loop'): 
 
         noised, orig = data['noised_img'], data['orig_img'] 
 
@@ -110,8 +132,8 @@ def eval(eval_dataset, model, conf):
         orig_noised_psnr += psnr(orig, noised, peak=conf.peak)
         recon_noised_psnr += psnr(recon, noised, peak=conf.peak)
 
-    print(f'{orig_noised_psnr/ len(eval_dataset)=}, {orig_recon_psnr/ len(eval_dataset)=}, {recon_noised_psnr/ len(eval_dataset)=}')
-    return orig_recon_psnr / len(eval_dataset)
+    print(f'{orig_noised_psnr/ len(eval_dataloader)=}, {orig_recon_psnr/ len(eval_dataloader)=}, {recon_noised_psnr/ len(eval_dataloader)=}')
+    return orig_recon_psnr / len(eval_dataloader)
         
 def main(): 
     conf_path = Path('/home/ac2323/4782/Noise2Score-Reproduce/conf', sys.argv[1])

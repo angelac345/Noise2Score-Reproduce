@@ -8,6 +8,10 @@ from pathlib import Path
 
 from tqdm import tqdm, trange
 class ImageDataset(Dataset): 
+    '''
+        This is a datset that randomly selects a 128x128 patch of the input images, 
+        then augment them by horizontal and vertical flipping 
+    '''
     def __init__(self, orig_img_path, sigma,patchnum=1,noised_img_path=None): 
         self.sigma = sigma 
         super(ImageDataset, self).__init__() 
@@ -17,7 +21,9 @@ class ImageDataset(Dataset):
         self.data_path = Path(orig_img_path)
         imDirec = os.listdir(orig_img_path)
         for p in range(patchnum):
+
             for i in tqdm(imDirec, desc='Patching Images', ncols=0, dynamic_ncols=False):
+                # For each image, select a random 128 x 128 patch 
                 oImg = cv2.imread(str(Path(orig_img_path, i)), 1)
 
                 s = oImg.shape
@@ -36,6 +42,7 @@ class ImageDataset(Dataset):
                 '''
         self.c_imgs =np.array(self.c_imgs)
         
+        # Create a set of noisy images by adding the requested noise 
         if noised_img_path is None: 
             self.n_imgs=np.copy(self.c_imgs)
             self._augment_images()
@@ -46,10 +53,11 @@ class ImageDataset(Dataset):
         self.c_imgs=torch.from_numpy(np.moveaxis(self.c_imgs,3,1))
         self.n_imgs=torch.from_numpy(np.moveaxis(self.n_imgs,3,1))
 
+        # scale the image pixel values to between 0 and 1
         self.c_imgs = self.c_imgs / 255.
         self.n_imgs = self.n_imgs / 255.
         '''
-        Creates a dictionary
+        Creates a list of dictionaries storing what to return during each data access
         '''
         self.dicts=[]
         for i in range(len(self.c_imgs)):

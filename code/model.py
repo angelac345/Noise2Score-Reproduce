@@ -41,7 +41,6 @@ class Model(nn.Module):
             nn.Conv2d(in_channels=48, out_channels=48, kernel_size=3, padding=1), # enc conv 6
             nn.LeakyReLU(0.1), 
             nn.Upsample(scale_factor=(2,2))                                         # upsample 5
-            # nn.ConvTranspose2d(48, 48, 3, stride=2, padding=1, output_padding=1)
         )
 
         self.upsample4 = nn.Sequential(
@@ -50,7 +49,6 @@ class Model(nn.Module):
             nn.Conv2d(in_channels=96, out_channels=96, kernel_size=3, padding=1), # dec conv 5B
             nn.LeakyReLU(0.1), 
             nn.Upsample(scale_factor=(2,2)),                                        # upsample 4
-            # nn.ConvTranspose2d(96, 96, 3, stride=2, padding=1, output_padding=1)
         )
         self.upsample3 = nn.Sequential(
             nn.Conv2d(in_channels=144, out_channels=96, kernel_size=3, padding=1), # dec conv 4A
@@ -58,7 +56,6 @@ class Model(nn.Module):
             nn.Conv2d(in_channels=96, out_channels=96, kernel_size=3, padding=1),   # dec conv 4B
             nn.LeakyReLU(0.1), 
             nn.Upsample(scale_factor=(2,2)),                                        # upsample 3
-            # nn.ConvTranspose2d(96, 96, 3, stride=2, padding=1, output_padding=1)
         )
         self.upsample2 = nn.Sequential(
             nn.Conv2d(in_channels=144, out_channels=96, kernel_size=3, padding=1), # dec conv 3A
@@ -66,7 +63,6 @@ class Model(nn.Module):
             nn.Conv2d(in_channels=96, out_channels=96, kernel_size=3, padding=1),   # dec conv 3B
             nn.LeakyReLU(0.1), 
             nn.Upsample(scale_factor=(2,2)),                                        # upsample 2
-            # nn.ConvTranspose2d(96, 96, 3, stride=2, padding=1, output_padding=1)
         )
         self.upsample1 = nn.Sequential(
             nn.Conv2d(in_channels=144, out_channels=96, kernel_size=3, padding=1), # dec conv 2A
@@ -74,7 +70,6 @@ class Model(nn.Module):
             nn.Conv2d(in_channels=96, out_channels=96, kernel_size=3, padding=1),   # dec conv 2B
             nn.LeakyReLU(0.1), 
             nn.Upsample(scale_factor=(2,2)),                                        # upsample 1
-            # nn.ConvTranspose2d(96, 96, 3, stride=2, padding=1, output_padding=1)
         )
 
         self.dec_conv = nn.Sequential(
@@ -87,7 +82,6 @@ class Model(nn.Module):
         )
 
     def forward(self, x): 
-        # breakpoint()
         p1 = self.pool1(x) 
         p2 = self.pool2(p1) 
         p3 = self.pool3(p2) 
