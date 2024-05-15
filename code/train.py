@@ -136,7 +136,8 @@ def eval(eval_dataloader, model, conf):
     return orig_recon_psnr / len(eval_dataloader)
         
 def main(): 
-    conf_path = Path('/home/ac2323/4782/Noise2Score-Reproduce/conf', sys.argv[1])
+    conf_path = Path(Path(__file__).parent.parent, 'conf', sys.argv[1])
+    
     conf = OmegaConf.load(conf_path)
 
     train_dataset = ImageDataset(
